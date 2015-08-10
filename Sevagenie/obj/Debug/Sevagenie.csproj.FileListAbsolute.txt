@@ -1,0 +1,11 @@
+D:\Projects\Sevagenie\Sevagenie\bin\Sevagenie.dll
+D:\Projects\Sevagenie\Sevagenie\bin\Sevagenie.pdb
+D:\Projects\Sevagenie\Sevagenie\bin\Business.dll
+D:\Projects\Sevagenie\Sevagenie\bin\Model.dll
+D:\Projects\Sevagenie\Sevagenie\bin\DataAccess.dll
+D:\Projects\Sevagenie\Sevagenie\bin\Business.pdb
+D:\Projects\Sevagenie\Sevagenie\bin\Model.pdb
+D:\Projects\Sevagenie\Sevagenie\bin\DataAccess.pdb
+D:\Projects\Sevagenie\Sevagenie\obj\Debug\Sevagenie.csprojResolveAssemblyReference.cache
+D:\Projects\Sevagenie\Sevagenie\obj\Debug\Sevagenie.dll
+D:\Projects\Sevagenie\Sevagenie\obj\Debug\Sevagenie.pdb

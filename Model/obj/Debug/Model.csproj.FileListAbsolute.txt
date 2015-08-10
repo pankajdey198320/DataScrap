@@ -1,0 +1,4 @@
+D:\Projects\Sevagenie\Model\bin\Debug\Model.dll
+D:\Projects\Sevagenie\Model\bin\Debug\Model.pdb
+D:\Projects\Sevagenie\Model\obj\Debug\Model.dll
+D:\Projects\Sevagenie\Model\obj\Debug\Model.pdb

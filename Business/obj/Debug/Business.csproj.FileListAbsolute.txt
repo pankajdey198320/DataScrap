@@ -1,0 +1,9 @@
+D:\Projects\Sevagenie\Business\bin\Debug\Business.dll
+D:\Projects\Sevagenie\Business\bin\Debug\Business.pdb
+D:\Projects\Sevagenie\Business\bin\Debug\DataAccess.dll
+D:\Projects\Sevagenie\Business\bin\Debug\Model.dll
+D:\Projects\Sevagenie\Business\bin\Debug\DataAccess.pdb
+D:\Projects\Sevagenie\Business\bin\Debug\Model.pdb
+D:\Projects\Sevagenie\Business\obj\Debug\Business.csprojResolveAssemblyReference.cache
+D:\Projects\Sevagenie\Business\obj\Debug\Business.dll
+D:\Projects\Sevagenie\Business\obj\Debug\Business.pdb

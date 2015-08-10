@@ -1,0 +1,7 @@
+D:\Projects\Sevagenie\DataAccess\bin\Debug\DataAccess.dll
+D:\Projects\Sevagenie\DataAccess\bin\Debug\DataAccess.pdb
+D:\Projects\Sevagenie\DataAccess\bin\Debug\Model.dll
+D:\Projects\Sevagenie\DataAccess\bin\Debug\Model.pdb
+D:\Projects\Sevagenie\DataAccess\obj\Debug\DataAccess.csprojResolveAssemblyReference.cache
+D:\Projects\Sevagenie\DataAccess\obj\Debug\DataAccess.dll
+D:\Projects\Sevagenie\DataAccess\obj\Debug\DataAccess.pdb
