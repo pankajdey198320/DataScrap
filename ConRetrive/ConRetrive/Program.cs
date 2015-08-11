@@ -1,9 +1,10 @@
-﻿using HtmlAgilityPack;
+using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Threading.Tasks;
 namespace ConRetrive
 {
     class Program
@@ -12,38 +13,161 @@ namespace ConRetrive
         static void Main(string[] args)
         {
             int i = 0;
-            var listHotels = new List<Data>();
-            HtmlWeb web = new HtmlWeb();
-            HtmlDocument doc = web.Load(base_url + "/Restaurants-g294226-Bali.html");///Hotels-g294226-Bali-Hotels.html");
-            //var nodes = doc.DocumentNode.Descendants().Where(p =>x p.Name == "div").Where(o => o.Id.Contains("hotel_")).Where(i => i.Attributes.FirstOrDefault(n => n.Value == "listing_title") != null);//.Where(p => p.Attributes.Contains("class='listing_info popIndexValidation'"));
-            var nodes = doc.DocumentNode.Descendants().Where(p => p.Name == "h3" && p.Attributes.FirstOrDefault(n => n.Value == "title") != null);//.Where(p => p.Attributes.Contains("class='listing_info popIndexValidation'"));
-            foreach (var item in nodes)
-            {
-                var test = item.ChildNodes.Where(p => p.NodeType == HtmlNodeType.Element && p.Name == "a").FirstOrDefault();
-                if (test != null)
-                {
-                    var d = new Data();
-                    d.ListUrl = base_url + "/Restaurants-g294226-Bali.html";
-                    d.Name = test.InnerText;
-                    var url = test.Attributes.FirstOrDefault(p => p.Name == "href");
-                    if (url != null)
-                    {
-                        d.ID = ++i;
-                        d.url = url.Value;
+            var listHotels = new System.Collections.Concurrent.ConcurrentBag<Data>();
 
+            var extUrl = "/RestaurantSearch?ajax=0&geo=294226&Action=PAGE&o=a{0}&etags=9910%2C9911%2C9909%2C9901%2C9899%2C9900";
+            var nods = Enumerable.Range(1, 3480).Where(p => p % 30 == 0);
+            Parallel.ForEach(nods, o =>
+            // {
+
+
+            //});
+            //for (var j = 0; j <= 3480; )
+            {
+                try
+                {
+                    HtmlWeb web = new HtmlWeb();
+                    HtmlDocument doc = web.Load(base_url + string.Format(extUrl, o));//"/Restaurants-g294226-Bali.html");///Hotels-g294226-Bali-Hotels.html");
+                    //var nodes = doc.DocumentNode.Descendants().Where(p =>x p.Name == "div").Where(o => o.Id.Contains("hotel_")).Where(i => i.Attributes.FirstOrDefault(n => n.Value == "listing_title") != null);//.Where(p => p.Attributes.Contains("class='listing_info popIndexValidation'"));
+                    var nodes = doc.DocumentNode.Descendants().Where(p => p.Name == "h3" && p.Attributes.FirstOrDefault(n => n.Value == "title") != null);//.Where(p => p.Attributes.Contains("class='listing_info popIndexValidation'"));
+                    foreach (var item in nodes)
+                    {
+                        var test = item.ChildNodes.Where(p => p.NodeType == HtmlNodeType.Element && p.Name == "a").FirstOrDefault();
+                        if (test != null)
+                        {
+                            var d = new Data();
+                            d.ListUrl = base_url + "/Restaurants-g294226-Bali.html";
+                            d.Name = test.InnerText;
+
+                            var url = test.Attributes.FirstOrDefault(p => p.Name == "href");
+                            if (url != null)
+                            {
+                                d.ID = ++i;
+                                d.url = url.Value;
+
+                            }
+                            listHotels.Add(d);
+                            LoadReview(d);
+                            Console.WriteLine(d.ToString());
+                        }
                     }
-                    listHotels.Add(d);
-                    GetReview(d);
                 }
-            }
-            WriteOutput(listHotels);
+                catch { }
+                // j += 30;
+            });
+            WriteOutput(listHotels.ToList());
             // HtmlNodeCollection tags = doc.DocumentNode.SelectNodes("//abc//tag");
         }
-        static void GetReview(Data d)
+        static void LoadReview(Data d)
         {
             HtmlWeb web = new HtmlWeb();
-            HtmlDocument doc = web.Load(base_url + d.url);
+            try
+            {
+                HtmlDocument doc = web.Load(base_url + d.url);
+                if (doc != null)
+                {
+                    var pageDiv = doc.DocumentNode.Descendants().FirstOrDefault(p => p.Attributes.FirstOrDefault(o => o.Name == "class" && o.Value == "pageNumbers") != null);
+                    if (pageDiv != null)
+                    {
+                        var rvPagecount = pageDiv.ChildNodes.Where(o => o.NodeType == HtmlNodeType.Element && o.Name == "a").LastOrDefault();
+                        GetReview(d, doc);
+                        if (rvPagecount != null)
+                        {
+                            int count = 0;
 
+                            int.TryParse(rvPagecount.InnerText, out count);
+                            if (count > 1)
+                            {
+                                var cn = Enumerable.Range(1, count);
+                                Parallel.ForEach(cn, p =>
+                                {
+                                    var url = d.url.Replace("Reviews-", "Reviews-or" + p * 10 + "-");
+                                    try
+                                    {
+                                        HtmlDocument dc = web.Load(base_url + url);
+                                        GetReview(d, dc);
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        Console.WriteLine(e.Message);
+                                    }
+                                });
+                            }
+                            //for (int i = 1; i < count; i++)
+                            //{
+                            //    var url = d.url.Replace("Reviews-", "Reviews-or" + i * 10 + "-");
+                            //    HtmlDocument dc = web.Load(base_url + url);
+                            //    GetReview(d, dc);
+                            //}
+
+                        }
+                    }
+                }
+                else
+                {
+
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+        }
+        static void GetReview(Data d, HtmlDocument doc)
+        {
+            var cuisine = doc.DocumentNode.Descendants().FirstOrDefault(p => p.Attributes.FirstOrDefault(o => o.Name == "class" && o.Value == "cuisine") != null);
+
+            if (cuisine != null)
+            {
+                d.cuisine = cuisine.InnerText.Trim();
+            }
+
+            var address = doc.DocumentNode.Descendants().FirstOrDefault(p => p.Attributes.FirstOrDefault(o => o.Name == "class" && o.Value == "format_address") != null);
+            if (address != null)
+            {
+                d.Address = address.InnerText.Trim();
+            }
+            var lblratings = doc.DocumentNode.Descendants().Where(p => p.Name == "div" && p.Attributes.FirstOrDefault(o => o.Name == "class" && o.Value == "ratingRow wrap") != null);
+            foreach (var item in lblratings)
+            {
+                var text = item.Descendants().FirstOrDefault(p => p.Name == "span" && p.Attributes.FirstOrDefault(o => o.Name == "class" && o.Value == "text") != null);
+                var value = item.Descendants().FirstOrDefault(p => p.Name == "img" && p.Attributes.FirstOrDefault(o => o.Name == "class" && o.Value.Contains("sprite-rating_s_fill rating_s_fill")) != null);
+                if (text != null && value != null)
+                {
+                    if (text.InnerText.Trim() == "Food")
+                    {
+                        var valx = value.Attributes.FirstOrDefault(p => p.Name == "alt");
+                        if (valx != null)
+                        {
+                            d.Food = valx.Value;
+                        }
+                    }
+                    else if (text.InnerText.Trim() == "Value")
+                    {
+                        var valx = value.Attributes.FirstOrDefault(p => p.Name == "alt");
+                        if (valx != null)
+                        {
+                            d.Value = valx.Value;
+                        }
+                    }
+                    else if (text.InnerText.Trim() == "Service")
+                    {
+                        var valx = value.Attributes.FirstOrDefault(p => p.Name == "alt");
+                        if (valx != null)
+                        {
+                            d.Service = valx.Value;
+                        }
+                    }
+                    else if (text.InnerText.Trim() == "Atmosphere")
+                    {
+                        var valx = value.Attributes.FirstOrDefault(p => p.Name == "alt");
+                        if (valx != null)
+                        {
+                            d.Atmosphere = valx.Value;
+                        }
+                    }
+                }
+            }
             var nodes = doc.DocumentNode.Descendants().FirstOrDefault(p => p.Name == "address");//.Where(p => p.Name == "div" && p.Attributes.FirstOrDefault(n => n.Value == "listing_title") != null);//.Where(p => p.Attributes.Contains("class='listing_info popIndexValidation'"));
             var tab = doc.DocumentNode.Descendants().FirstOrDefault(p => p.Id == "TABS_REVIEWS");
             if (tab != null)
@@ -88,14 +212,14 @@ namespace ConRetrive
                     }
                 }
             }
-            if (nodes != null)
-            {
-                var add = nodes.Descendants().FirstOrDefault(p => p.Attributes.FirstOrDefault(o => o.Name == "property" && o.Value == "address") != null);
-                if (add != null)
-                {
-                    d.Address = add.InnerText;
-                }
-            }
+            //if (nodes != null)
+            //{
+            //    var add = nodes.Descendants().FirstOrDefault(p => p.Attributes.FirstOrDefault(o => o.Name == "property" && o.Value == "address") != null);
+            //    if (add != null)
+            //    {
+            //        d.Address = add.InnerText;
+            //    }
+            //}
             var revws = doc.DocumentNode.Descendants().Where(p => p.Id.Contains("review_") && p.Attributes.FirstOrDefault(o => o.Value == "reviewSelector  ") != null);
 
             foreach (var item in revws)
@@ -143,29 +267,34 @@ namespace ConRetrive
 
         static void WriteOutput(List<Data> data)
         {
-            string header = "Destination Country,City,Restaurant list page,Restaurant Name,No of reviewes,Url,Excellent,Very Good,Average,Poor,Terrible,Topic of commants,Name of Reviewer,Review Date,Reviewer location, Reviewer Country";
+            string header = "Destination Country,City,Restaurant list page,Restaurant Name,Address,cuisine,No of reviewes,Url,Excellent,Very Good,Average,Poor,Terrible,Food,Value,Services,Atmosphere,Topic of commants,Name of Reviewer,Review Date,Reviewer location, Reviewer Country";
             var op = (from v in data
                       from c in v.Reviewes
                       select new object[]
                       {
-                           v.Country==null?"":v.Country.Trim(),
-                          v.City==null?"":v.City.Trim(),
-                           v.ListUrl==null?"":v.ListUrl.Trim(),
-                           v.Name==null?"":v.Name.Trim(),
+                            v.Country.ToFormatString(),
+                           v.City.ToFormatString(),
+                            v.ListUrl.ToFormatString(),
+                            v.Name.ToFormatString(),
+                          v.Address.ToFormatString(),
+                          v.cuisine.ToFormatString() ,
+                           v.Counts.ToFormatString(),
+                           v.url.ToFormatString(),
+                           v.Excellent.ToFormatString(),
+                           v.VeryGood.ToFormatString(),
+                           v.Average.ToFormatString(),
+                           v.Poor.ToFormatString(),
+                           v.Terrible.ToFormatString(),
+                           v.Food.ToFormatString(),
+                          v.Value.ToFormatString(),
+                          v.Service.ToFormatString(),
+                           v.Atmosphere.ToFormatString(),
+                           c.ReviewQuote.ToFormatString(),
                          
-                          v.Counts==null?"":v.Counts.Trim(),
-                          v.url ==null?"":v.url.Trim(),
-                          v.Excellent==null?"":v.Excellent.Trim(),
-                          v.VeryGood==null?"":v.VeryGood.Trim(),
-                          v.Average==null?"":v.Average.Trim(),
-                          v.Poor==null?"":v.Poor.Trim(),
-                          v.Terrible==null?"":v.Terrible.Trim(),
-                          c.ReviewQuote==null?"":c.ReviewQuote.Trim(),
-                         
-                          c.Name ==null?"":c.Name.Trim(),
-                          c.Date==null?"":c.Date.Trim(),
-                          c.City==null?"":c.City.Trim(),
-                          c.Country==null?"":c.Country.Trim()
+                           c.Name.ToFormatString() ,
+                           c.Date.ToFormatString(),
+                           c.City.ToFormatString(),
+                           c.Country.ToFormatString()
 
                       }).ToList();
             // Build the file content
@@ -176,7 +305,7 @@ namespace ConRetrive
                 csv.AppendLine(string.Join(",", line));
             });
 
-            File.WriteAllText("c:\\p.csv", csv.ToString());
+            File.WriteAllText("c:\\build76_9_8_2015.csv", csv.ToString());
         }
 
         static void GetIndividualReviews(Data d)
@@ -188,9 +317,12 @@ namespace ConRetrive
     class Data
     {
         private string _cnt;
+        private string _csn;
+        private string _addr;
         public Data()
         {
-            Reviewes = new List<Review>();
+            _cnt = "";
+            Reviewes = new System.Collections.Concurrent.ConcurrentBag<Review>();
             Country = "Indonesia";
             City = "Bali";
 
@@ -198,11 +330,42 @@ namespace ConRetrive
         public string ListUrl { get; set; }
         public string Name { get; set; }
         public string url { get; set; }
-        public string Address { get; set; }
-        public string Counts { get {
-            return _cnt.Replace(",", "");
+        public string Address
+        {
+            get
+            {
+                if (_addr == null)
+                    return "";
+                return _addr.Replace(",", "");
+            }
+            set
+            {
+                _addr = value;
+            }
         }
-            set {
+        public string cuisine
+        {
+            get
+            {
+                if (_csn == null)
+                    return "";
+                return _csn.Replace(",", "");
+            }
+            set
+            {
+                _csn = value;
+            }
+        }
+        public string Counts
+        {
+            get
+            {
+                if (_cnt == null)
+                    return "";
+                return _cnt.Replace(",", "");
+            }
+            set
+            {
                 _cnt = value;
             }
         }
@@ -214,7 +377,11 @@ namespace ConRetrive
         public string Country { get; set; }
         public string City { get; set; }
         public int ID { get; set; }
-        public List<Review> Reviewes { get; set; }
+        public System.Collections.Concurrent.ConcurrentBag<Review> Reviewes { get; set; }
+        public string Food { get; set; }
+        public string Value { get; set; }
+        public string Service { get; set; }
+        public string Atmosphere { get; set; }
         public override string ToString()
         {
             return Name + "," + url + "," + Address + "," + Counts + "," + Excellent + "," + VeryGood + "," + Average + "," + Poor + "," + Terrible;
@@ -237,5 +404,19 @@ namespace ConRetrive
         public string Country { get; set; }
         public string City { get; set; }
         public string Date { get; set; }
+    }
+
+    public static class StringExtension
+    {
+        public static string ToFormatString(this string obj)
+        {
+            if (string.IsNullOrWhiteSpace(obj)) {
+                return "NA";
+            }
+            else
+            {
+               return obj.Replace(",", " ").Trim();
+            }
+        }
     }
 }
