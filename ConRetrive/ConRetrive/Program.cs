@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Threading.Tasks;
+using System.Net;
 namespace ConRetrive
 {
     class Program
@@ -21,82 +22,108 @@ namespace ConRetrive
             var extUrl = "/RestaurantSearch?ajax=0&geo=294265&Action=PAGE&o=a{0}&etags=9909%2C9899%2C9901%2C9900%2C9910%2C9911";
             var nods = Enumerable.Range(1, 7110).Where(p => p % 30 == 0);
             //var nods = Enumerable.Range(1, 40).Where(p => p % 30 == 0);
-            // Parallel.ForEach(nods, o =>
-            // {
+            Parallel.ForEach(nods, o =>
+           // {
 
 
-            //});
-            for (var o = 0; o <= 3480; )
-            {
-                try
-                {
-                    HtmlWeb web = new HtmlWeb();
-                    HtmlDocument doc = null;
-                    for (var ic = 0; ic < 10 && doc == null; ic++)
-                    {
-                        try
-                        {
-                            doc = web.Load(base_url + string.Format(extUrl, o));//"/Restaurants-g294226-Bali.html");///Hotels-g294226-Bali-Hotels.html");
+           //});
+           //for (var o = 0; o <= 3480; )
+           {
+               try
+               {
 
-                        }
-                        catch (Exception e)
-                        {
-                            System.Threading.Thread.Sleep(1000);
-                        }
-                    }
-                    //var nodes = doc.DocumentNode.Descendants().Where(p =>x p.Name == "div").Where(o => o.Id.Contains("hotel_")).Where(i => i.Attributes.FirstOrDefault(n => n.Value == "listing_title") != null);//.Where(p => p.Attributes.Contains("class='listing_info popIndexValidation'"));
-                    if (doc != null)
-                    {
-                        var nodes = doc.DocumentNode.Descendants().Where(p => p.Name == "h3" && p.Attributes.FirstOrDefault(n => n.Value == "title") != null);//.Where(p => p.Attributes.Contains("class='listing_info popIndexValidation'"));
-                        //  Parallel.ForEach(nodes, item =>
-                        foreach (var item in nodes)
-                        {
-                            var test = item.ChildNodes.Where(p => p.NodeType == HtmlNodeType.Element && p.Name == "a").FirstOrDefault();
-                            if (test != null)
-                            {
-                                var d = new Data();
+                   HtmlDocument doc = null;
+                   for (var ic = 0; ic < 10 && doc == null; ic++)
+                   {
+                      // HtmlWeb web = new HtmlWeb();
+                      // web.PreRequest += new HtmlWeb.PreRequestHandler(onPrereq);
+                       try
+                       {
+                           doc = GetDoc(base_url + string.Format(extUrl, o));
 
-                                d.Name = test.InnerText;
+                       }
+                       catch (Exception e)
+                       {
+                           Console.WriteLine("error to load " + base_url + string.Format(extUrl, o) + " " + ic);
+                           System.Threading.Thread.Sleep(1000);
+                       }
+                   }
+                   //var nodes = doc.DocumentNode.Descendants().Where(p =>x p.Name == "div").Where(o => o.Id.Contains("hotel_")).Where(i => i.Attributes.FirstOrDefault(n => n.Value == "listing_title") != null);//.Where(p => p.Attributes.Contains("class='listing_info popIndexValidation'"));
+                   if (doc != null)
+                   {
+                       var nodes = doc.DocumentNode.Descendants().Where(p => p.Name == "h3" && p.Attributes.FirstOrDefault(n => n.Value == "title") != null);//.Where(p => p.Attributes.Contains("class='listing_info popIndexValidation'"));
+                       //  Parallel.ForEach(nodes, item =>
+                       foreach (var item in nodes)
+                       {
+                           var test = item.ChildNodes.Where(p => p.NodeType == HtmlNodeType.Element && p.Name == "a").FirstOrDefault();
+                           if (test != null)
+                           {
+                               var d = new Data();
 
-                                var url = test.Attributes.FirstOrDefault(p => p.Name == "href");
-                                if (url != null)
-                                {
-                                    d.ID = ++i;
-                                    d.url = url.Value;
+                               d.Name = test.InnerText;
 
-                                }
-                                d.ListUrl = base_url + d.url;// "/Restaurants-g294226-Bali.html";
-                                listHotels.Add(d);
-                                LoadReview(d);
-                                Console.WriteLine(d.ToString());
-                            }
-                        }
-                        //);
-                    }
-                }
-                catch { }
-                // j += 30;
-            }
-            // );
+                               var url = test.Attributes.FirstOrDefault(p => p.Name == "href");
+                               if (url != null)
+                               {
+                                   d.ID = ++i;
+                                   d.url = url.Value;
+
+                               }
+                               d.ListUrl = base_url + d.url;// "/Restaurants-g294226-Bali.html";
+                               listHotels.Add(d);
+                               LoadReview(d);
+                               WriteOutput(d);
+                               Console.WriteLine(d.ToString());
+                           }
+                       }
+                       //);
+                   }
+               }
+               catch { }
+               // j += 30;
+           }
+            );
             WriteOutput(listHotels.ToList());
             // HtmlNodeCollection tags = doc.DocumentNode.SelectNodes("//abc//tag");
         }
+
+        static HtmlDocument GetDoc(string url)
+        {
+            HtmlDocument doc = null;
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+            request.Timeout = 1000*60*5;
+            request.ReadWriteTimeout = 1000 * 60 * 5;
+            using (var wresp = (HttpWebResponse)request.GetResponse())
+            {
+                if (wresp != null)// (!string.IsNullOrWhiteSpace(str))
+                {
+                    doc = new HtmlDocument();
+                    doc.Load(wresp.GetResponseStream());
+                }
+            }
+            return doc;
+        }
+        static bool onPrereq(System.Net.HttpWebRequest req)
+        {
+            req.Timeout = 500000;
+            return true;
+        }
         static void LoadReview(Data d)
         {
-            HtmlWeb web = new HtmlWeb();
+
             try
             {
+
                 HtmlDocument doc = null;
                 for (var x = 0; x < 10 && doc == null; x++)
                 {
                     try
                     {
-                        doc = web.Load(base_url + d.url);
-                        //  doc.Save(base_path + d.Name.Trim().Replace(" ", ""));
-
+                        doc = GetDoc(base_url + d.url);
                     }
                     catch
                     {
+                        Console.WriteLine("error to load " + base_url + d.url + " " + x);
                         System.Threading.Thread.Sleep(10000);
                     }
                 }
@@ -124,13 +151,15 @@ namespace ConRetrive
                                        HtmlDocument dc = null;
                                        for (var inl = 0; inl < 10 && dc == null; inl++)
                                        {
+                                           // HtmlWeb web = new HtmlWeb();
+                                           //web.PreRequest += new HtmlWeb.PreRequestHandler(onPrereq);
                                            try
                                            {
-                                               dc = web.Load(base_url + url);
-                                               // dc.Save(base_path + d.Name.Trim().Replace(" ", "") + p * 10);
+                                               dc = GetDoc(base_url + url);
                                            }
                                            catch
                                            {
+                                               Console.WriteLine("error to load " + base_url + d.url + " " + inl);
                                                System.Threading.Thread.Sleep(10000);
                                            }
                                        }
@@ -319,13 +348,13 @@ namespace ConRetrive
                         if (!string.IsNullOrWhiteSpace(src) && !string.IsNullOrWhiteSpace(uid))
                         {
                             HtmlDocument dc = null;
-                            HtmlWeb web = new HtmlWeb();
+                            // HtmlWeb web = new HtmlWeb();
+                            ///  web.PreRequest += new HtmlWeb.PreRequestHandler(onPrereq);
                             for (var inl = 0; inl < 10 && dc == null; inl++)
                             {
                                 try
                                 {
-                                    dc = web.Load(base_url + string.Format(s,uid,src));
-                                    // dc.Save(base_path + d.Name.Trim().Replace(" ", "") + p * 10);
+                                    dc = GetDoc(base_url + string.Format(s, uid, src));                                    
                                 }
                                 catch
                                 {
@@ -348,7 +377,7 @@ namespace ConRetrive
                                 var profUrlDiv = dc.DocumentNode.Descendants().FirstOrDefault(p => p.Name == "div" && p.Attributes.FirstOrDefault(o => o.Name == "class" && o.Value == "baseNav") != null);
                                 if (profUrlDiv != null)
                                 {
-                                    var profLvlan = profUrlDiv.Descendants().LastOrDefault(p => p.Name == "a" );
+                                    var profLvlan = profUrlDiv.Descendants().LastOrDefault(p => p.Name == "a");
                                     if (profLvlan != null)
                                     {
                                         var href = profLvlan.Attributes.FirstOrDefault(x => x.Name == "href");
@@ -401,7 +430,7 @@ namespace ConRetrive
 
         static void WriteOutput(List<Data> data)
         {
-            string header = "Destination Country,City,Restaurant list page,Restaurant Name,Address,cuisine,No of reviewes,Url,Excellent,Very Good,Average,Poor,Terrible,Food,Value,Services,Atmosphere,Topic of commants,Name of Reviewer,Review Date,Reviewer location, Reviewer Country";
+            string header = "Destination Country,City,Restaurant list page,Restaurant Name,Address,cuisine,No of reviewes,Url,Excellent,Very Good,Average,Poor,Terrible,Food,Value,Services,Atmosphere,Topic of commants,Name of Reviewer,Review Date,Reviewer location, Reviewer Country,level,profile";
             var op = (from v in data
                       from c in v.Reviewes
                       select new object[]
@@ -428,7 +457,9 @@ namespace ConRetrive
                            c.Name.ToFormatString() ,
                            c.Date.ToFormatString(),
                            c.City.ToFormatString(),
-                           c.Country.ToFormatString()
+                           c.Country.ToFormatString(),
+                           c.ReviererLevel.ToFormatString(),
+                           c.ReviewerProfileUrl.ToFormatString()
 
                       }).ToList();
             // Build the file content
@@ -440,6 +471,57 @@ namespace ConRetrive
             });
 
             File.WriteAllText("c:\\build76_9_8_2015.csv", csv.ToString());
+        }
+
+        static void WriteOutput(Data v)
+        {
+           // string header = "Destination Country,City,Restaurant list page,Restaurant Name,Address,cuisine,No of reviewes,Url,Excellent,Very Good,Average,Poor,Terrible,Food,Value,Services,Atmosphere,Topic of commants,Name of Reviewer,Review Date,Reviewer location, Reviewer Country,level,profile";
+            var op = (
+                      from c in v.Reviewes
+                      select new object[]
+                      {
+                            v.Country.ToFormatString(),
+                           v.City.ToFormatString(),
+                            v.ListUrl.ToFormatString(),
+                            v.Name.ToFormatString(),
+                          v.Address.ToFormatString(),
+                          v.cuisine.ToFormatString() ,
+                           v.Counts.ToFormatString(),
+                           c.Url.ToFormatString(),
+                           v.Excellent.ToFormatString(),
+                           v.VeryGood.ToFormatString(),
+                           v.Average.ToFormatString(),
+                           v.Poor.ToFormatString(),
+                           v.Terrible.ToFormatString(),
+                           v.Food.ToFormatString(),
+                          v.Value.ToFormatString(),
+                          v.Service.ToFormatString(),
+                           v.Atmosphere.ToFormatString(),
+                           c.ReviewQuote.ToFormatString(),
+                         
+                           c.Name.ToFormatString() ,
+                           c.Date.ToFormatString(),
+                           c.City.ToFormatString(),
+                           c.Country.ToFormatString(),
+                           c.ReviererLevel.ToFormatString(),
+                           c.ReviewerProfileUrl.ToFormatString()
+
+                      }).ToList();
+            // Build the file content
+            var csv = new StringBuilder();
+           // csv.AppendLine(header);
+            op.ForEach(line =>
+            {
+                csv.AppendLine(string.Join(",", line));
+            });
+            try
+            {
+                File.AppendAllText("c:\\build80_9_8_2015.csv", csv.ToString());
+            }
+            catch
+            {
+                Console.WriteLine("write error");
+            }
         }
 
         static void GetIndividualReviews(Data d)
