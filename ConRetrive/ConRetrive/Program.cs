@@ -1,4 +1,4 @@
-using HtmlAgilityPack;
+﻿using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,10 +16,10 @@ namespace ConRetrive
         {
             int i = 0;
             var listHotels = new System.Collections.Concurrent.ConcurrentBag<Data>();
-            /* BAliurl
+            /* BAliurl  * */
             var extUrl = "/RestaurantSearch?ajax=0&geo=294226&Action=PAGE&o=a{0}&etags=9910%2C9911%2C9909%2C9901%2C9899%2C9900";
-             * */
-            var extUrl = "/RestaurantSearch?ajax=0&geo=294265&Action=PAGE&o=a{0}&etags=9909%2C9899%2C9901%2C9900%2C9910%2C9911";
+           
+          //  var extUrl = "/RestaurantSearch?ajax=0&geo=294265&Action=PAGE&o=a{0}&etags=9909%2C9899%2C9901%2C9900%2C9910%2C9911";
             var nods = Enumerable.Range(1, 7110).Where(p => p % 30 == 0);
             //var nods = Enumerable.Range(1, 40).Where(p => p % 30 == 0);
             Parallel.ForEach(nods, o =>
@@ -35,8 +35,8 @@ namespace ConRetrive
                    HtmlDocument doc = null;
                    for (var ic = 0; ic < 10 && doc == null; ic++)
                    {
-                      // HtmlWeb web = new HtmlWeb();
-                      // web.PreRequest += new HtmlWeb.PreRequestHandler(onPrereq);
+                       // HtmlWeb web = new HtmlWeb();
+                       // web.PreRequest += new HtmlWeb.PreRequestHandler(onPrereq);
                        try
                        {
                            doc = GetDoc(base_url + string.Format(extUrl, o));
@@ -91,7 +91,7 @@ namespace ConRetrive
         {
             HtmlDocument doc = null;
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-            request.Timeout = 1000*60*5;
+            request.Timeout = 1000 * 60 * 5;
             request.ReadWriteTimeout = 1000 * 60 * 5;
             using (var wresp = (HttpWebResponse)request.GetResponse())
             {
@@ -273,7 +273,7 @@ namespace ConRetrive
                         {
                             d.Excellent = LastChild.InnerText;
                         }
-                        else if (FirstChild.InnerText.Trim() == "VeryGood")
+                        else if (string.Compare(FirstChild.InnerText.Trim(), "Very Good", true) == 0)
                         {
                             d.VeryGood = LastChild.InnerText;
                         }
@@ -354,7 +354,7 @@ namespace ConRetrive
                             {
                                 try
                                 {
-                                    dc = GetDoc(base_url + string.Format(s, uid, src));                                    
+                                    dc = GetDoc(base_url + string.Format(s, uid, src));
                                 }
                                 catch
                                 {
@@ -475,7 +475,7 @@ namespace ConRetrive
 
         static void WriteOutput(Data v)
         {
-           // string header = "Destination Country,City,Restaurant list page,Restaurant Name,Address,cuisine,No of reviewes,Url,Excellent,Very Good,Average,Poor,Terrible,Food,Value,Services,Atmosphere,Topic of commants,Name of Reviewer,Review Date,Reviewer location, Reviewer Country,level,profile";
+            // string header = "Destination Country,City,Restaurant list page,Restaurant Name,Address,cuisine,No of reviewes,Url,Excellent,Very Good,Average,Poor,Terrible,Food,Value,Services,Atmosphere,Topic of commants,Name of Reviewer,Review Date,Reviewer location, Reviewer Country,level,profile";
             var op = (
                       from c in v.Reviewes
                       select new object[]
@@ -509,7 +509,7 @@ namespace ConRetrive
                       }).ToList();
             // Build the file content
             var csv = new StringBuilder();
-           // csv.AppendLine(header);
+            // csv.AppendLine(header);
             op.ForEach(line =>
             {
                 csv.AppendLine(string.Join(",", line));
