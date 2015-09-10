@@ -28,10 +28,10 @@ namespace ConRetrive
 
             int i = 0;
 
-            /* BAliurl
+           //BAliurl
             var extUrl = "/RestaurantSearch?ajax=0&geo=294226&Action=PAGE&o=a{0}&etags=9910%2C9911%2C9909%2C9901%2C9899%2C9900";
-             * */
-            var extUrl = "/RestaurantSearch?ajax=0&geo=294265&Action=PAGE&o=a{0}&etags=9909%2C9899%2C9901%2C9900%2C9910%2C9911";
+           
+            //var extUrl = "/RestaurantSearch?ajax=0&geo=294265&Action=PAGE&o=a{0}&etags=9909%2C9899%2C9901%2C9900%2C9910%2C9911";
             var nods = Enumerable.Range(1, 7110).Where(p => p % 30 == 0);
             //var nods = Enumerable.Range(1, 40).Where(p => p % 30 == 0);
             //Parallel.ForEach(nods, o =>
